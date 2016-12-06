@@ -1,0 +1,17 @@
+DISKSPACE=`df -h | grep /dev/xvdp1 | awk '{print $4}' | awk -F"G" '{print $1}'`
+if [ $DISKSPACE > 500 ] ; then
+		FOLDER=`date --date="$1 day ago" +"%Y%m%d"`
+		LOGPATH=/home/webmaster/scalelog.$FOLDER
+		echo folder name is $FOLDER >> $LOGPATH
+		cd /logs/
+		/bin/ls /logs/$FOLDER  >1
+		if [ $? == 0 ]; then
+			echo $FOLDER  exist >> $LOGPATH
+			tar -zcvf $FOLDER.tar.gz $FOLDER --exclude "*.sqlite" >> $LOGPATH
+			aws s3 mv $FOLDER.tar.gz s3://jbl-scalearc-logs-nv/ >> $LOGPATH
+		else 
+			echo $FOLDER not exist  >> $LOGPATH
+		fi
+fi
+(echo -e "From: infra@justbuylive.com  \nTo: infra@justbuylive.com \nMIME-Version: 1.0 \nSubject: Scalearc log backup status \nContent-Type: text/html \n"; cat $LOGPATH ) | /usr/sbin/sendmail -t
+rm -rf $LOGPATH

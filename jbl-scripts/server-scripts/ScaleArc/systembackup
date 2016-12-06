@@ -1,0 +1,8 @@
+#!/bin/bash
+IP=`curl -s http://169.254.169.254/latest/meta-data/local-ipv4`
+DT=`date +%d:%m:%Y`
+>/home/webmaster/message2
+>/home/webmaster/message1
+curl -k -X GET https://172.16.11.252/api/system/backup?apikey=17bf71586bca90bd8c772dc5cb8415db319e9eb3 >>/home/webmaster/message1
+s3cmd sync /system/idb.cfg.enc  s3://jbl-scalearc-logs-nv/$IP/$DT/ >>/home/webmaster/message2
+(echo -e "From: kunal.patil@justbuylive.com  \nTo: infra@justbuylive.com \nMIME-Version: 1.0 \nSubject: Scalearc config backup uploaded in s3 bucket of date `date` \nContent-Type: text/html \n"; cat /home/webmaster/message2 ) | /usr/sbin/sendmail -t

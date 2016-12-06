@@ -1,0 +1,31 @@
+diskcheck() {
+if [ $SPACE -gt 55 ]
+then
+
+	echo "Free disk space on server is less than 55%"|mailx -s "SVN repo Backup" balasaheb.gopale@justbuylive.com
+	exit
+
+fi
+}
+
+svnrepobackup() {
+for i in $FOLDER
+do
+	/bin/nice -n 5 svnadmin hotcopy /var/svn/repo/$i  /home/chetanm/svnbackup/$i
+done
+cd /home/chetanm/
+tar -zcvf $TAR_NAME.tar.bz2 svnbackup
+aws s3 mv $TAR_NAME.tar.bz2 s3://jbl-git-svn-backup/jbl-svn/ >> /home/chetanm/svnbackup/svnbackup.txt 2>&1
+echo "SVN backup logs" |mailx -a /home/chetanm/svnbackup/svnbackup.txt -s "SVN repo Backup logs" balasaheb.gopale@justbuylive.com
+rm -rf /home/chetanm/svnbackup/*
+}
+
+######## Start ############
+mkdir -p /home/chetanm/svnbackup
+SPACE=`df -h | grep /dev/xvda1 | awk '{print $5}' | sed 's/%//'`
+cd /var/svn/repo
+FOLDER=`ls -d */`
+TAR_NAME=`date +%Y%m%d`repo
+
+diskcheck
+svnrepobackup
